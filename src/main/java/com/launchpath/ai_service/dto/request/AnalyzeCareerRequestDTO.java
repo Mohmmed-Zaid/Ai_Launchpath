@@ -13,7 +13,7 @@ import java.util.List;
 @Setter
 public class AnalyzeCareerRequestDTO {
 
-    @NotBlank(message = "userId is required")
+
     private String userId;
 
     @NotBlank(message = "targetRole is required")

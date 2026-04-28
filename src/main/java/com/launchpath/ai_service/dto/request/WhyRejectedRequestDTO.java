@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 public class WhyRejectedRequestDTO {
 
-    @NotBlank(message = "userId is required")
+
     private String userId;
 
     @NotBlank(message = "resumeContent is required")

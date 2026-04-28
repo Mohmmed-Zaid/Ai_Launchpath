@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 public class MatchJobsRequestDTO {
 
-    @NotBlank(message = "userId is required")
+
     private String userId;
 
     @NotBlank(message = "targetRole is required")

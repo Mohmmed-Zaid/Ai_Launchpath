@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 public class CompanyTargetingRequestDTO {
 
-    @NotBlank(message = "userId is required")
+
     private String userId;
 
     @NotBlank(message = "targetRole is required")

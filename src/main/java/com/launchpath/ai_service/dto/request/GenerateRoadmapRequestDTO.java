@@ -14,7 +14,7 @@ import java.util.List;
 @Setter
 public class GenerateRoadmapRequestDTO {
 
-    @NotBlank(message = "userId is required")
+
     private String userId;
 
     @NotBlank(message = "targetRole is required")

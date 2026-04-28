@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -37,12 +38,14 @@ public class CareerController {
     @PostMapping("/analyze-career")
     public ResponseEntity<ApiResponseDTO<CareerAnalysisResponseDTO>>
     analyzeCareer(
-            @Valid @RequestBody AnalyzeCareerRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody AnalyzeCareerRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        // Sync request userId with JWT userId
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         CareerAnalysisResponseDTO result =
                 careerAnalysisService.analyzeCareer(request, provider);
@@ -57,12 +60,13 @@ public class CareerController {
     @PostMapping("/generate-roadmap")
     public ResponseEntity<ApiResponseDTO<RoadmapResponseDTO>>
     generateRoadmap(
-            @Valid @RequestBody GenerateRoadmapRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody GenerateRoadmapRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         RoadmapResponseDTO result =
                 roadmapService.generateRoadmap(request, provider);
@@ -77,12 +81,13 @@ public class CareerController {
     @PostMapping("/suggest-actions")
     public ResponseEntity<ApiResponseDTO<ActionSuggestionResponseDTO>>
     suggestActions(
-            @Valid @RequestBody SuggestActionsRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody SuggestActionsRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         ActionSuggestionResponseDTO result =
                 actionSuggestionService.suggestActions(request, provider);
@@ -97,12 +102,13 @@ public class CareerController {
     @PostMapping("/company-targeting")
     public ResponseEntity<ApiResponseDTO<CompanyTargetingResponseDTO>>
     companyTargeting(
-            @Valid @RequestBody CompanyTargetingRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody CompanyTargetingRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         CompanyTargetingResponseDTO result =
                 companyTargetingService.targetCompanies(request, provider);
@@ -117,12 +123,13 @@ public class CareerController {
     @PostMapping("/match-jobs")
     public ResponseEntity<ApiResponseDTO<JobMatchResponseDTO>>
     matchJobs(
-            @Valid @RequestBody MatchJobsRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody MatchJobsRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         JobMatchResponseDTO result =
                 jobMatchingService.matchJobs(request, provider);
@@ -137,12 +144,13 @@ public class CareerController {
     @PostMapping("/why-rejected")
     public ResponseEntity<ApiResponseDTO<WhyRejectedResponseDTO>>
     whyRejected(
-            @Valid @RequestBody WhyRejectedRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false)
-            String userIdHeader) {
+            @Valid @RequestBody WhyRejectedRequestDTO request) {
 
-        checkRateLimit(request.getUserId());
-        AiProvider provider = resolveProvider(request.getUserId());
+        Long userId = getCurrentUserId();
+        request.setUserId(String.valueOf(userId));
+
+        checkRateLimit(String.valueOf(userId));
+        AiProvider provider = resolveProvider(String.valueOf(userId));
 
         WhyRejectedResponseDTO result =
                 whyRejectedService.analyzeRejection(request, provider);
@@ -157,17 +165,19 @@ public class CareerController {
     @GetMapping("/analysis-history")
     public ResponseEntity<ApiResponseDTO<Page<CareerAnalysisResponseDTO>>>
     getAnalysisHistory(
-            @RequestHeader("X-User-Id") String userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sort) {
 
+        Long userId = getCurrentUserId();
         Pageable pageable = PageRequest.of(
                 page, size, Sort.by(sort).descending()
         );
 
         Page<CareerAnalysisResponseDTO> history =
-                careerAnalysisService.getAnalysisHistory(userId, pageable);
+                careerAnalysisService.getAnalysisHistory(
+                        String.valueOf(userId), pageable
+                );
 
         return ResponseEntity.ok(
                 ApiResponseDTO.success("Analysis history fetched", history)
@@ -179,14 +189,16 @@ public class CareerController {
     @GetMapping("/roadmap-history")
     public ResponseEntity<ApiResponseDTO<Page<RoadmapResponseDTO>>>
     getRoadmapHistory(
-            @RequestHeader("X-User-Id") String userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        Long userId = getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
 
         Page<RoadmapResponseDTO> history =
-                roadmapService.getRoadmapHistory(userId, pageable);
+                roadmapService.getRoadmapHistory(
+                        String.valueOf(userId), pageable
+                );
 
         return ResponseEntity.ok(
                 ApiResponseDTO.success("Roadmap history fetched", history)
@@ -198,11 +210,14 @@ public class CareerController {
     @GetMapping("/readiness-history")
     public ResponseEntity<ApiResponseDTO<ReadinessHistoryResponseDTO>>
     getReadinessHistory(
-            @RequestHeader("X-User-Id") String userId,
             @RequestParam String targetRole) {
 
+        Long userId = getCurrentUserId();
+
         ReadinessHistoryResponseDTO history =
-                readinessHistoryService.getHistory(userId, targetRole);
+                readinessHistoryService.getHistory(
+                        String.valueOf(userId), targetRole
+                );
 
         return ResponseEntity.ok(
                 ApiResponseDTO.success("Readiness history fetched", history)
@@ -214,11 +229,14 @@ public class CareerController {
     @GetMapping("/tasks/today")
     public ResponseEntity<ApiResponseDTO<ActionSuggestionResponseDTO>>
     getTodaysTasks(
-            @RequestHeader("X-User-Id") String userId,
             @RequestParam String targetRole) {
 
+        Long userId = getCurrentUserId();
+
         ActionSuggestionResponseDTO tasks =
-                actionSuggestionService.getTodaysTasks(userId, targetRole);
+                actionSuggestionService.getTodaysTasks(
+                        String.valueOf(userId), targetRole
+                );
 
         return ResponseEntity.ok(
                 ApiResponseDTO.success("Today's tasks fetched", tasks)
@@ -252,5 +270,12 @@ public class CareerController {
         }
 
         return AiProvider.GROQ_FREE;
+    }
+
+    private Long getCurrentUserId() {
+        return (Long) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
     }
 }
