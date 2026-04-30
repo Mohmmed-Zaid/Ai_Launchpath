@@ -10,11 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class HashingService {
 
-    /**
-     * Generates SHA-256 hash from resume content string.
-     * Called before any AI analysis to check cache.
-     * If hash unchanged → same resume → return cached result.
-     */
+
     public String hashResumeContent(String resumeContent) {
         if (resumeContent == null || resumeContent.isBlank()) {
             throw new IllegalArgumentException(
