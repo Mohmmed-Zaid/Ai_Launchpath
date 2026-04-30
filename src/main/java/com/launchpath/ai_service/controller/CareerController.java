@@ -2,7 +2,9 @@ package com.launchpath.ai_service.controller;
 
 import com.launchpath.ai_service.dto.request.*;
 import com.launchpath.ai_service.dto.response.*;
+import com.launchpath.ai_service.entity.ActionTask;
 import com.launchpath.ai_service.enums.AiProvider;
+import com.launchpath.ai_service.enums.TaskStatus;
 import com.launchpath.ai_service.exception.RateLimitExceededException;
 import com.launchpath.ai_service.feign.UserServiceClient;
 import com.launchpath.ai_service.services.*;
@@ -16,6 +18,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -32,17 +38,32 @@ public class CareerController {
     private final ReadinessHistoryService readinessHistoryService;
     private final RateLimitService rateLimitService;
     private final UserServiceClient userServiceClient;
-
+    private final HashingService hashingService;
     // ── analyze-career ────────────────────────────────────
 
     @PostMapping("/analyze-career")
-    public ResponseEntity<ApiResponseDTO<CareerAnalysisResponseDTO>>
-    analyzeCareer(
+    public ResponseEntity<ApiResponseDTO<CareerAnalysisResponseDTO>> analyzeCareer(
             @Valid @RequestBody AnalyzeCareerRequestDTO request) {
 
         Long userId = getCurrentUserId();
-        // Sync request userId with JWT userId
         request.setUserId(String.valueOf(userId));
+
+        // Generate resume hash for cache lookup BEFORE calling service
+        if (request.getResumeData() != null) {
+            List<String> parts = new ArrayList<>();
+            if (request.getSkills() != null)
+                parts.addAll(request.getSkills());
+            if (request.getResumeData().getExperience() != null)
+                parts.addAll(request.getResumeData().getExperience()
+                        .stream().map(Object::toString).toList());
+            if (request.getResumeData().getProjects() != null)
+                parts.addAll(request.getResumeData().getProjects()
+                        .stream().map(Object::toString).toList());
+
+            if (!parts.isEmpty()) {
+                request.setResumeHash(hashingService.hashFromParts(parts));
+            }
+        }
 
         checkRateLimit(String.valueOf(userId));
         AiProvider provider = resolveProvider(String.valueOf(userId));
@@ -136,6 +157,25 @@ public class CareerController {
 
         return ResponseEntity.ok(
                 ApiResponseDTO.success("Job matches generated", result)
+        );
+    }
+
+    @PatchMapping("/tasks/{taskId}/status")
+    public ResponseEntity<ApiResponseDTO<Object>> updateTaskStatus(
+            @PathVariable Long taskId,
+            @RequestBody Map<String, String> body) {
+
+        Long userId = getCurrentUserId();
+        String newStatus = body.get("status");
+
+        ActionTask updated = actionSuggestionService.updateTaskStatus(
+                taskId,
+                String.valueOf(userId),
+                TaskStatus.valueOf(newStatus)
+        );
+
+        return ResponseEntity.ok(
+                ApiResponseDTO.success("Task status updated", updated)
         );
     }
 
